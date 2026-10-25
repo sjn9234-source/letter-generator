@@ -1,0 +1,72 @@
+// 실제 브라우저(Chromium)로 dist/index.html 을 열어 모든 카드를 그려 보고,
+// 글자가 넘치는 카드가 없는지 확인한 뒤 한눈에 보는 시트(preview/sheet-*.png)를 만듭니다.
+// 필요: playwright (npm i -D playwright 또는 전역 설치)
+import { createRequire } from 'node:module';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const require = createRequire(join(root, 'package.json'));
+let chromium;
+try { ({ chromium } = require('playwright')); } catch {
+  console.error('playwright 가 없어 화면 점검을 건너뜁니다. (npm i -D playwright)');
+  process.exit(0);
+}
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 400, height: 860 }, deviceScaleFactor: 2 });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+await page.goto(pathToFileURL(join(root, 'dist/index.html')).href);
+await page.waitForFunction(() => document.querySelectorAll('.thumb').length > 0);
+
+// 휴대폰 첫 화면 캡처
+mkdirSync(join(root, 'preview'), { recursive: true });
+await page.screenshot({ path: join(root, 'preview/screen-phone.png'), fullPage: true });
+
+const result = await page.evaluate(async () => {
+  await window.LetterApp.ready();
+  const D = window.APP_DATA;
+  const cases = [];
+  for (const [type, list] of [['speech', D.speeches], ['chant', D.chants]]) {
+    for (const c of list) {
+      cases.push({ type, id: c.id, name: '', message: '' });
+      cases.push({ type, id: c.id, name: '김지훈', message: '다음 주에 같이 근행해요. 늘 응원할게요!' });
+    }
+  }
+  const out = [];
+  for (const k of cases) {
+    const cv = document.createElement('canvas');
+    const r = window.LetterApp.renderTo(cv, k.type, k.id, k.name, k.message);
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+    out.push({ ...k, ...r, png: !!blob, w: cv.width, h: cv.height, url: k.name ? cv.toDataURL('image/jpeg', 0.8) : null });
+  }
+  return out;
+});
+
+const problems = result.filter((r) => r.overflow || !r.png || r.w !== 1080 || r.h !== 1350);
+for (const r of result) {
+  if (!r.name) continue;
+  console.log(`${r.id}  글자크기 ${r.fontSize}px  ${r.overflow ? '⚠ 넘침' : 'OK'}  PNG ${r.png ? 'OK' : '실패'}`);
+}
+
+// 이름+메시지 넣은 카드 시트 (스피치 / 근행 각각)
+for (const type of ['speech', 'chant']) {
+  const urls = result.filter((r) => r.type === type && r.url).map((r) => r.url);
+  const html = `<body style="margin:0;background:#ddd;display:grid;grid-template-columns:repeat(5,432px);gap:8px;padding:8px">${urls.map((u) => `<img src="${u}" style="width:432px">`).join('')}</body>`;
+  const p = await browser.newPage({ viewport: { width: 2208, height: 1100 } });
+  await p.setContent(html);
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: join(root, `preview/sheet-${type}.png`), fullPage: true });
+  await p.close();
+}
+await browser.close();
+
+writeFileSync(join(root, 'preview/report.json'), JSON.stringify(result.map(({ url, ...r }) => r), null, 2));
+if (errors.length) console.error('페이지 오류:', errors);
+if (problems.length || errors.length) {
+  console.error(`✗ 문제 ${problems.length}건`, problems.map((p) => `${p.id}${p.name ? '(이름 있음)' : ''}`));
+  process.exit(1);
+}
+console.log(`✓ 카드 ${result.length}개 조합 모두 1080×1350 PNG 생성, 글자 넘침 없음`);

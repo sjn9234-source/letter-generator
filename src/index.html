@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>함께 부르는 행복</title>
+<meta name="description" content="한 사람에게 전하는 마음 — 응원 카드 만들기">
+<meta property="og:title" content="함께 부르는 행복">
+<meta property="og:description" content="카드를 고르고, 이름을 적고, 사진으로 저장해 보내 주세요.">
+<meta name="theme-color" content="#F7F1E8">
+<style>/*STYLES*/</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>함께 부르는 행복</h1>
+    <p class="sub">한 사람에게 전하는 마음</p>
+  </header>
+
+  <div class="notice" id="kakaoNotice" hidden>
+    <p>카카오톡 안에서는 사진 저장이 잘 안 될 수 있어요.</p>
+    <a class="notice-btn" id="openExternal" href="#">다른 브라우저로 열기</a>
+  </div>
+
+  <ol class="steps" aria-label="사용 순서">
+    <li><b>1</b> 카드 고르기</li>
+    <li><b>2</b> 이름 적기</li>
+    <li><b>3</b> 사진 저장</li>
+  </ol>
+
+  <section aria-labelledby="pickTitle">
+    <h2 id="pickTitle" class="step-title"><b>1</b> 마음에 드는 카드를 눌러 주세요</h2>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-speech" data-tab="speech" aria-selected="true">응원 스피치</button>
+      <button role="tab" id="tab-chant" data-tab="chant" aria-selected="false">근행창제</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section aria-labelledby="nameLabel">
+    <h2 class="step-title"><b>2</b> <label id="nameLabel" for="name">받는 분 이름</label></h2>
+    <input id="name" type="text" inputmode="text" autocomplete="off" maxlength="12" placeholder="예: 지훈">
+    <p class="hint">비워 두면 이름 없이 만들어져요.</p>
+  </section>
+
+  <section aria-labelledby="previewTitle">
+    <h2 id="previewTitle" class="step-title"><b>3</b> 완성된 카드</h2>
+    <canvas id="preview" width="1080" height="1350" role="img" aria-label="카드 미리보기"></canvas>
+
+    <details class="more" id="aboutCard">
+      <summary>이 카드 설명 보기</summary>
+      <div id="aboutBody"></div>
+    </details>
+
+    <details class="more" id="decorate">
+      <summary>더 꾸미기 (선택)</summary>
+      <label for="message" class="field-label">보내는 말</label>
+      <textarea id="message" rows="2" maxlength="60" placeholder="예: 다음 주에 같이 근행해요"></textarea>
+      <p class="field-label">배경 그림</p>
+      <div class="bgs" id="bgs"></div>
+    </details>
+  </section>
+
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <footer class="foot">
+    <p>시범 버전 <span id="ver"></span> · 카드 문구는 검수 중입니다.</p>
+    <p>적으신 이름과 문구는 어디에도 전송·저장되지 않습니다.</p>
+  </footer>
+</main>
+
+<div class="actions">
+  <button class="btn-main" id="save">카드 사진 저장</button>
+  <button class="btn-sub" id="share" hidden>사진 공유하기</button>
+</div>
+
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
+  <p id="viewerTitle" class="viewer-text">사진을 <b>길게 눌러</b> '이미지 저장'을 선택해 주세요.</p>
+  <img id="viewerImg" alt="저장할 카드 사진">
+  <button class="btn-sub" id="viewerClose">닫기</button>
+</div>
+
+<script>window.APP_DATA = /*DATA*/;</script>
+<script>/*SCRIPTS*/</script>
+</body>
+</html>
