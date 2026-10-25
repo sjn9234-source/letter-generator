@@ -5,6 +5,8 @@
   var MARGIN = 100;              // 좌우 여백
   var MAX_W = W - MARGIN * 2;    // 글자 최대 폭
   var TOP = 572, BOTTOM = 1252;  // 글자 영역
+  // 근행 카드는 설명이 길어 일러스트 위쪽을 잘라 씁니다. 그림의 주요 요소는 위에서 CROP px 아래에 두세요.
+  var CROP = 200;
   var SERIF = '"Noto Serif KR","Noto Serif CJK KR","Nanum Myeongjo","AppleMyungjo",serif';
   var SANS = '"Pretendard","Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
   var SITE_NAME = '함께 부르는 행복';
@@ -34,7 +36,7 @@
   function formatDate(iso) {
     if (!iso) return '';
     var p = iso.split('-');
-    return p[0] + '. ' + Number(p[1]) + '. ' + Number(p[2]) + '.';
+    return p[0] + '.\u00A0' + Number(p[1]) + '.\u00A0' + Number(p[2]) + '.'; // 날짜는 줄바꿈되지 않게
   }
 
   // 블록 = 줄 목록. 각 줄은 {text, font, color, h(줄 높이), x?, extra?}
@@ -71,31 +73,39 @@
     return out.concat(messageBlock(ctx, message, bg));
   }
 
+  // 근행 카드: 독송음(크게) 아래 한자(작게) → 경문의 뜻 → 쉽게 말하면 → 출처
   function chantBlock(ctx, card, bg, name, message, s) {
-    var out = salutation(ctx, name, s, bg);
-    var labelSize = Math.max(28, s * 0.36);
-    out = out.concat(textLines(ctx, '법화경 ' + card.chapter, font(600, labelSize, SANS), bg.accent, labelSize * 1.7, MAX_W));
+    var out = salutation(ctx, name, Math.min(s, 64), bg);
+    out = out.concat(textLines(ctx, '법화경 ' + card.chapter, font(600, 28, SANS), bg.accent, 28 * 1.7, MAX_W));
 
+    var readings = card.reading.split(' · ');
     var hanja = card.hanja.split('·');
-    var reading = card.reading.split(' · ');
-    var hf = font(600, s, SERIF), rf = font(500, Math.max(30, s * 0.46), SANS);
-    ctx.font = hf;
-    var colW = Math.max.apply(null, hanja.map(function (t) { return ctx.measureText(t).width; }));
+    var cols = readings.length === 1 ? 1 : 2;
+    var colGap = 40;
+    var colW = (MAX_W - colGap * (cols - 1)) / cols;
+    var hs = Math.max(28, s * 0.42);
+    var rf = font(700, s, SERIF), hf = font(500, hs, SERIF);
     ctx.font = rf;
-    var readW = Math.max.apply(null, reading.map(function (t) { return ctx.measureText(t).width; }));
-    var colGap = s * 0.55;
-    var tooWide = colW + colGap + readW > MAX_W;
-    hanja.forEach(function (h, i) {
-      out.push({ row: true, hanja: h, reading: reading[i] || '', hf: hf, rf: rf, colX: colW + colGap, h: s * 1.32, color: bg.ink, sub: bg.accent });
+    var tooWide = readings.some(function (t) { return ctx.measureText(t).width > colW; });
+    var rows = Math.ceil(readings.length / cols);
+    var readH = s * 1.22, hanjaH = hs * 1.5, rowGap = s * 0.3;
+    out.push({
+      cells: true, cols: cols, colW: colW, colGap: colGap, rf: rf, hf: hf,
+      readH: readH, hanjaH: hanjaH, rowGap: rowGap, ink: bg.ink, accent: bg.accent,
+      items: readings.map(function (r, i) { return { reading: r, hanja: hanja[i] || '' }; }),
+      h: rows * (readH + hanjaH) + (rows - 1) * rowGap
     });
+    out.push(gap(s * 0.45));
 
-    out.push(gap(s * 0.5));
-    var es = Math.max(36, Math.min(46, s * 0.55));
-    out = out.concat(textLines(ctx, card.explanation, font(400, es, SANS), bg.ink, es * 1.6, MAX_W));
-    out.push(gap(22));
+    var b = Math.max(30, Math.min(38, s * 0.5));
+    [['경문의 뜻', card.meaning], ['쉽게 말하면', card.explanation]].forEach(function (sec) {
+      out = out.concat(textLines(ctx, sec[0], font(700, 26, SANS), bg.accent, 26 * 1.6, MAX_W));
+      out = out.concat(textLines(ctx, sec[1], font(400, b, SANS), bg.ink, b * 1.55, MAX_W));
+      out.push(gap(18));
+    });
     // 카드에는 출처의 첫 항목만, 전체 출처는 앱의 '카드 설명 보기'에 표시
     var shortSource = card.sourceLabel.split(/ \/ | · /)[0];
-    out = out.concat(textLines(ctx, '출처 · ' + shortSource, font(400, 28, SANS), bg.sub, 28 * 1.5, MAX_W));
+    out = out.concat(textLines(ctx, '출처 · ' + shortSource, font(400, 26, SANS), bg.sub, 26 * 1.5, MAX_W));
     out = out.concat(messageBlock(ctx, message, bg));
     out.tooWide = tooWide;
     return out;
@@ -135,21 +145,28 @@
     ctx.save();
     ctx.fillStyle = bg.paper;
     ctx.fillRect(0, 0, W, H);
-    if (opts.image) ctx.drawImage(opts.image, 0, 0, W, ILL_H);
+    var isChant = opts.type === 'chant';
+    var cut = isChant ? CROP : 0;
+    if (opts.image) {
+      var sw = opts.image.naturalWidth || opts.image.width || W;
+      var k = sw / W; // 그림 파일 크기가 달라도 같은 비율로 잘라 씁니다
+      ctx.drawImage(opts.image, 0, cut * k, W * k, (ILL_H - cut) * k, 0, 0, W, ILL_H - cut);
+    }
+    var top = TOP - cut;
 
     // 글자 크기 자동 맞춤: 큰 글씨부터 줄여 가며 영역 안에 들어가는 첫 크기를 씁니다.
-    var build = opts.type === 'chant' ? chantBlock : speechBlock;
-    var maxS = opts.type === 'chant' ? 92 : 66;
-    var minS = opts.type === 'chant' ? 44 : 38;
+    var build = isChant ? chantBlock : speechBlock;
+    var maxS = isChant ? 80 : 66;
+    var minS = isChant ? 40 : 38;
     var s = maxS, block, total, overflow = false;
     for (; s >= minS; s -= 2) {
       block = build(ctx, card, bg, name, message, s);
       total = measure(block);
-      if (total <= BOTTOM - TOP && !block.tooWide) break;
+      if (total <= BOTTOM - top && !block.tooWide) break;
     }
     if (s < minS) { s = minS; block = build(ctx, card, bg, name, message, s); total = measure(block); overflow = true; }
 
-    var y = TOP + Math.max(0, (BOTTOM - TOP - total) * 0.4);
+    var y = top + Math.max(0, (BOTTOM - top - total) * 0.4);
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     block.forEach(function (l) {
@@ -160,12 +177,15 @@
         y += l.h;
         return;
       }
-      if (l.row) {
-        var base = y + l.h * 0.78;
-        ctx.font = l.hf; ctx.fillStyle = l.color;
-        ctx.fillText(l.hanja, MARGIN, base);
-        ctx.font = l.rf; ctx.fillStyle = l.sub;
-        ctx.fillText(l.reading, MARGIN + l.colX, base - 4);
+      if (l.cells) {
+        l.items.forEach(function (it, i) {
+          var x = MARGIN + (i % l.cols) * (l.colW + l.colGap);
+          var cy = y + Math.floor(i / l.cols) * (l.readH + l.hanjaH + l.rowGap);
+          ctx.font = l.rf; ctx.fillStyle = l.ink;
+          ctx.fillText(it.reading, x, cy + l.readH * 0.8);
+          ctx.font = l.hf; ctx.fillStyle = l.accent;
+          ctx.fillText(it.hanja, x, cy + l.readH + l.hanjaH * 0.7);
+        });
         y += l.h;
         return;
       }
