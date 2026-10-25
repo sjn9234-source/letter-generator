@@ -1,0 +1,68 @@
+[
+  {
+    "id": "bg-01",
+    "name": "새벽 언덕",
+    "file": "bg-01.svg",
+    "paper": "#FBF6EE",
+    "ink": "#3B2A20",
+    "sub": "#8A7464",
+    "accent": "#B4643C",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  },
+  {
+    "id": "bg-02",
+    "name": "봄 나뭇가지",
+    "file": "bg-02.svg",
+    "paper": "#F7F6EF",
+    "ink": "#2F3527",
+    "sub": "#7C826F",
+    "accent": "#5E7A4A",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  },
+  {
+    "id": "bg-03",
+    "name": "아침 바다",
+    "file": "bg-03.svg",
+    "paper": "#F6F4EF",
+    "ink": "#24323F",
+    "sub": "#738290",
+    "accent": "#3F6C8C",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  },
+  {
+    "id": "bg-04",
+    "name": "들길",
+    "file": "bg-04.svg",
+    "paper": "#F9F4EA",
+    "ink": "#3A2F22",
+    "sub": "#8D7F69",
+    "accent": "#9A6B2E",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  },
+  {
+    "id": "bg-05",
+    "name": "매화",
+    "file": "bg-05.svg",
+    "paper": "#FBF5F2",
+    "ink": "#3D2629",
+    "sub": "#91767A",
+    "accent": "#B2545E",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  },
+  {
+    "id": "bg-06",
+    "name": "별빛 눈길",
+    "file": "bg-06.svg",
+    "paper": "#F5F2EC",
+    "ink": "#232A3B",
+    "sub": "#737B8E",
+    "accent": "#4A5A86",
+    "source": "직접 제작 (SVG)",
+    "license": "자체 제작 · 제한 없음"
+  }
+]

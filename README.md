@@ -1,2 +1,71 @@
-# letter-generator
-letter-generator
+# 함께 부르는 행복
+
+한 사람에게 전하는 마음 — 응원 스피치·근행창제 카드를 **카드 고르기 → 이름 적기 → 사진 저장** 세 동작으로 만드는 모바일 웹앱입니다.
+서버·로그인·AI 호출 없이 휴대폰 브라우저에서 카드 그림(1080×1350 PNG)을 만듭니다.
+
+> **현재 상태: 시범 버전 (v0.1.0)**
+> - 카드 20장(S01~S10, G01~G10)은 기획서 v3의 **임시 문구**입니다. 최종 문구 10+10이 오면 교체합니다.
+> - 모든 카드가 `"status": "검수 전"` 입니다. 공식 인용의 정확성과 사용 허락을 확인하기 전에는 대외 배포하지 마세요.
+> - 배경 그림 6장은 임시로 직접 그린 SVG 일러스트입니다. 원하는 그림으로 바꿀 수 있습니다.
+
+## 폴더 구성
+
+| 위치 | 무엇이 들어 있나 | 언제 고치나 |
+|---|---|---|
+| `content/speeches.json` | 응원 스피치 카드 | 문구를 바꾸거나 추가할 때 |
+| `content/chants.json` | 근행창제 카드 (한자·독송음·풀이) | 교학 카드를 바꿀 때 |
+| `content/backgrounds.json` | 배경 그림 목록과 글자 색 | 그림·색을 바꿀 때 |
+| `assets/backgrounds/` | 배경 그림 파일 (svg, png, jpg, webp) | 그림 파일을 넣을 때 |
+| `src/render.js` | 카드 배치 (글자 크기·위치) | 카드 모양을 바꿀 때 |
+| `src/app.js`, `src/index.html`, `src/styles.css` | 화면 | 화면을 바꿀 때 |
+| `dist/index.html` | **완성품** (자동 생성, 직접 고치지 않음) | — |
+| `spec.md` | 기획서 | — |
+
+## 카드 고치는 법
+
+**스피치 문구 바꾸기** — `content/speeches.json`에서 해당 카드의 `quote`(원문)와 `lines`(카드에서 줄을 나눌 위치)를 함께 고칩니다.
+`lines`를 띄어쓰기 자리에서 나눠 이어 붙였을 때 `quote`와 똑같아야 합니다. 다르면 `npm test`가 알려 줍니다.
+
+**근행 카드** — `hanja`와 `reading`의 구절 수가 같아야 합니다. 독송음은 사용자가 제공한 근행요전 표기를 그대로 씁니다(`tests/content.test.mjs`에 고정).
+
+**배경 그림 바꾸기** — 가로 1080 × 세로 640 비율의 그림을 `assets/backgrounds/`에 넣고, `backgrounds.json`의 `file`을 바꿉니다.
+그림의 **아래쪽은 `paper` 색과 이어지게** 그려야 글자 영역과 자연스럽게 만납니다. 카드별 그림은 각 카드의 `background`로 정합니다.
+
+**Claude에게 맡길 때** — "S03 문구를 이걸로 바꿔줘", "G 카드 10개를 이 파일로 교체해줘"처럼 말하고 자료를 첨부하면 됩니다.
+
+## 명령어
+
+```bash
+npm test        # 카드 데이터 점검 (ID, 필수 항목, 독송음 원문 일치, 배경 파일)
+npm run build   # dist/index.html 생성
+npm run check   # 빌드 + 실제 브라우저로 카드 40개 조합 그려 보기 → preview/ 에 시트 이미지
+```
+
+`npm run check`에는 playwright가 필요합니다(`npm i -D playwright`).
+
+## 배포 (Cloudflare Pages · Git 연동)
+
+처음 한 번만:
+1. Cloudflare 로그인 → **Workers & Pages → Create → Pages → Connect to Git**
+   (⚠ Direct Upload로 만들면 나중에 Git 연동으로 바꿀 수 없습니다.)
+2. 저장소 `sjn9234-source/letter-generator` 선택
+3. Build command: `npm run build` / Build output directory: `dist`
+4. Production branch: `main`
+
+그다음부터는 `main`에 반영될 때마다 **같은 주소(`https://<프로젝트명>.pages.dev`)** 로 자동 배포됩니다.
+PR을 열면 Cloudflare가 미리보기 주소를 따로 만들어 주므로, 휴대폰으로 확인한 뒤 합치면 됩니다.
+
+배포 후 확인: Android Chrome, 삼성 인터넷, 카카오톡에서 링크 열기 → 카드 저장 → 카카오톡 사진 첨부.
+
+## 저장·공유 동작
+
+- **카드 사진 저장**: PNG 파일을 내려받습니다. 보통 휴대폰의 '다운로드' 폴더에 저장됩니다.
+- **사진 공유하기**: 기기가 파일 공유를 지원할 때만 나타납니다.
+- **카카오톡 안에서 열었을 때**: 저장이 막힐 수 있어 사진을 크게 띄우고 "길게 눌러 저장"을 안내합니다. 상단에 다른 브라우저로 여는 버튼이 나옵니다.
+- 이름·보내는 말은 화면 안에서만 쓰이고 어디에도 전송·저장되지 않습니다. 파일 이름에도 들어가지 않습니다.
+
+## 확인한 것 / 아직 못 한 것
+
+- ✅ 데이터 점검 8개 통과, Chromium(데스크톱)에서 카드 20장 × (이름 없음/이름+보내는 말) 40개 조합 PNG 생성·글자 넘침 없음
+- ⬜ 실제 휴대폰(Android Chrome, 삼성 인터넷, 카카오톡 인앱, iPhone Safari)에서의 저장·공유는 아직 확인하지 않았습니다.
+- ⬜ 휴대폰 기본 글꼴에 따라 카드 글자 모양이 조금씩 다를 수 있습니다(글꼴 미내장).

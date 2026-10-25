@@ -1,0 +1,12 @@
+{
+  "name": "letter-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "함께 부르는 행복 — 응원·근행창제 카드 만들기",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "check": "node scripts/build.mjs && node scripts/check.mjs"
+  }
+}
