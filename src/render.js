@@ -48,6 +48,7 @@
   function gap(h) { return { gap: true, h: h }; }
 
   function salutation(ctx, name, s, bg) {
+    name = name.replace(/\s*(씨|님)$/, ''); // '지훈씨'라고 적어도 '지훈씨씨께'가 되지 않게
     if (!name) return [];
     var size = Math.max(40, s * 0.66);
     return textLines(ctx, name + '씨께', font(600, size, SANS), bg.accent, size * 1.4, MAX_W)

@@ -22,7 +22,7 @@
     <a class="notice-btn" id="openExternal" href="#">다른 브라우저로 열기</a>
   </div>
 
-  <ol class="steps" aria-label="사용 순서"><li>카드 고르기</li><li>이름 적기</li><li>사진 저장</li></ol>
+  <ol class="steps" aria-label="사용 순서"><li>카드 고르기</li><li>이름(편지) 적기</li><li>사진 저장</li></ol>
 
   <section aria-labelledby="pickTitle">
     <h2 id="pickTitle" class="step-title"><b>1</b> 마음에 드는 카드를 눌러 주세요</h2>
@@ -33,10 +33,14 @@
     <div class="grid" id="grid"></div>
   </section>
 
-  <section aria-labelledby="nameLabel">
-    <h2 class="step-title"><b>2</b> <label id="nameLabel" for="name">받는 분 이름</label></h2>
+  <section aria-labelledby="nameStep">
+    <h2 id="nameStep" class="step-title"><b>2</b> 이름과 편지 적기</h2>
+    <label for="name" class="field-label">받는 분 이름</label>
     <input id="name" type="text" inputmode="text" autocomplete="off" maxlength="12" placeholder="예: 지훈">
     <p class="hint">비워 두면 이름 없이 만들어져요.</p>
+    <label for="message" class="field-label field-gap">보내는 말 <b class="limit">(선택 · <span id="limitMax">40</span>자까지)</b></label>
+    <textarea id="message" rows="2" maxlength="40" placeholder="예: 다음 주에 같이 근행해요"></textarea>
+    <p class="counter" id="counter" aria-live="polite"><span id="count">0</span> / <span id="countMax">40</span>자</p>
   </section>
 
   <section aria-labelledby="previewTitle">
@@ -48,12 +52,9 @@
       <div id="aboutBody"></div>
     </details>
 
-    <details class="more" id="decorate">
+    <details class="more" id="decorate" open>
       <summary>더 꾸미기 (선택)</summary>
-      <label for="message" class="field-label">보내는 말 <b class="limit">(<span id="limitMax">40</span>자까지)</b></label>
-      <textarea id="message" rows="2" maxlength="40" placeholder="예: 다음 주에 같이 근행해요"></textarea>
-      <p class="counter" id="counter" aria-live="polite"><span id="count">0</span> / <span id="countMax">40</span>자</p>
-      <p class="field-label">배경 그림</p>
+      <p class="field-label">배경 그림 바꾸기</p>
       <div class="bgs" id="bgs"></div>
     </details>
   </section>

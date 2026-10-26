@@ -22,8 +22,8 @@ h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
 .notice p { margin: 0 0 10px; }
 .notice-btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 18px; border-radius: 10px; background: var(--ink); color: #fff; text-decoration: none; font-weight: 600; }
 
-.steps { list-style: none; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 0; margin: 20px 0 8px; color: var(--sub); font-size: clamp(14px, 4.4vw, 18px); font-weight: 600; white-space: nowrap; }
-.steps li + li::before { content: "→"; margin-right: 10px; color: var(--accent); }
+.steps { list-style: none; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 0; margin: 20px 0 8px; color: var(--sub); font-size: clamp(13px, 4.1vw, 18px); font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
+.steps li + li::before { content: "→"; margin-right: 6px; color: var(--accent); }
 .step-title b {
   display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
   background: var(--ink); color: #fff; font-size: 15px;
@@ -68,7 +68,7 @@ input:focus, textarea:focus, button:focus-visible, summary:focus-visible, a:focu
 .more dt { font-size: 15px; color: var(--sub); margin-top: 10px; }
 .more dd { margin: 2px 0 0; }
 .more a { color: var(--accent); word-break: break-all; }
-.field-label { display: block; font-size: 16px; color: var(--sub); margin: 12px 0 6px; }
+.field-label { display: block; font-size: 18px; font-weight: 600; color: var(--ink); margin: 12px 0 6px; }
 
 .bgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .bgs button {
@@ -109,3 +109,6 @@ input:focus, textarea:focus, button:focus-visible, summary:focus-visible, a:focu
 .limit { font-weight: 600; color: var(--accent); }
 .counter { margin: 6px 0 0; text-align: right; font-size: 16px; color: var(--sub); }
 .counter.full { color: var(--accent); font-weight: 700; }
+.field-gap { margin-top: 22px; }
+#nameStep { scroll-margin-top: 12px; }
+#name + .hint { margin-bottom: 0; }

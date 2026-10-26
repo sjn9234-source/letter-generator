@@ -25,10 +25,18 @@ await page.waitForFunction(() => document.querySelectorAll('.thumb').length > 0)
 for (const width of [320, 360]) {
   await page.setViewportSize({ width, height: 800 });
   const rows = await page.evaluate(() => new Set([...document.querySelectorAll('.steps li')].map((li) => Math.round(li.getBoundingClientRect().top))).size);
-  const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth || [...document.querySelectorAll('.steps li')].some((li) => li.getBoundingClientRect().right > window.innerWidth));
   if (rows !== 1 || over) { console.error(`✗ ${width}px 화면: 사용 순서가 ${rows}줄이거나 가로로 넘칩니다`); process.exitCode = 1; }
 }
 await page.setViewportSize({ width: 400, height: 860 });
+
+// 카드를 누르면 '2 이름과 편지 적기' 제목이 화면 위쪽에 보이는지
+await page.click('.thumb:nth-child(4)');
+await page.waitForTimeout(900);
+const stepTop = await page.evaluate(() => document.getElementById('nameStep').getBoundingClientRect().top);
+if (stepTop < 0 || stepTop > 60) { console.error(`✗ 카드를 눌렀을 때 2단계 제목 위치가 ${Math.round(stepTop)}px 입니다`); process.exitCode = 1; }
+await page.screenshot({ path: join(root, 'preview/screen-after-pick.png') });
+await page.evaluate(() => window.scrollTo(0, 0));
 
 // 휴대폰 첫 화면 캡처
 mkdirSync(join(root, 'preview'), { recursive: true });
