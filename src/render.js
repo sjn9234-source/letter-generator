@@ -50,15 +50,48 @@
   function salutation(ctx, name, s, bg) {
     if (!name) return [];
     var size = Math.max(40, s * 0.66);
-    return textLines(ctx, name + '님께', font(600, size, SANS), bg.accent, size * 1.4, MAX_W)
+    return textLines(ctx, name + '씨께', font(600, size, SANS), bg.accent, size * 1.4, MAX_W)
       .concat([gap(s * 0.55)]);
+  }
+
+  // 보내는 말: 줄바꿈은 글자 단위(최대 2줄). MESSAGE_MAX 글자까지는 잘림 없이 들어갑니다.
+  var MESSAGE_MAX = 40;
+  var BOX_PAD = 28;
+
+  function charWrap(ctx, text, maxW) {
+    var lines = [], cur = '';
+    for (var i = 0; i < text.length; i++) {
+      if (text[i] === '\n') { lines.push(cur); cur = ''; continue; }
+      if (cur && ctx.measureText(cur + text[i]).width > maxW) { lines.push(cur); cur = text[i].trim() === '' ? '' : text[i]; }
+      else cur += text[i];
+    }
+    lines.push(cur);
+    return lines;
   }
 
   function messageBlock(ctx, message, bg) {
     if (!message) return [];
-    var size = 36;
-    var out = [gap(34), { rule: true, color: bg.accent, h: 24 }];
-    return out.concat(textLines(ctx, message, font(400, size, SANS), bg.ink, size * 1.5, MAX_W).slice(0, 2));
+    var size = 36, lh = size * 1.5, label = 26;
+    var f = font(500, size, SANS);
+    ctx.font = f;
+    var lines = charWrap(ctx, message, MAX_W - BOX_PAD * 2);
+    var cut = lines.length > 2;
+    lines = lines.slice(0, 2);
+    return [gap(30), {
+      msgBox: true, lines: lines, font: f, lh: lh, label: label, pad: BOX_PAD,
+      ink: bg.ink, accent: bg.accent, cut: cut,
+      h: BOX_PAD + label * 1.5 + lines.length * lh + BOX_PAD - 6
+    }];
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   function speechBlock(ctx, card, bg, name, message, s) {
@@ -146,34 +179,49 @@
     ctx.fillStyle = bg.paper;
     ctx.fillRect(0, 0, W, H);
     var isChant = opts.type === 'chant';
-    var cut = isChant ? CROP : 0;
+    var build = isChant ? chantBlock : speechBlock;
+    var maxS = isChant ? 80 : 66;
+    var minS = isChant ? 40 : 38;
+
+    // 글자 크기 자동 맞춤: 큰 글씨부터 줄여 가며 영역 안에 들어가는 첫 크기를 씁니다.
+    // 스피치 카드는 글이 길 때만 그림 위쪽을 100px, 200px 순서로 더 잘라 공간을 만듭니다.
+    // (그림의 주요 요소는 위에서 200px 아래에 있으므로 잘려도 보입니다.)
+    var cuts = isChant ? [CROP, CROP + 50] : [0, 100, CROP];
+    var cut, top, s, block, total, overflow = true;
+    for (var ci = 0; ci < cuts.length && overflow; ci++) {
+      cut = cuts[ci];
+      top = TOP - cut;
+      for (s = maxS; s >= minS; s -= 2) {
+        block = build(ctx, card, bg, name, message, s);
+        total = measure(block);
+        if (total <= BOTTOM - top && !block.tooWide) { overflow = false; break; }
+      }
+    }
+    if (overflow) { s = minS; block = build(ctx, card, bg, name, message, s); total = measure(block); }
+
     if (opts.image) {
       var sw = opts.image.naturalWidth || opts.image.width || W;
       var k = sw / W; // 그림 파일 크기가 달라도 같은 비율로 잘라 씁니다
       ctx.drawImage(opts.image, 0, cut * k, W * k, (ILL_H - cut) * k, 0, 0, W, ILL_H - cut);
     }
-    var top = TOP - cut;
-
-    // 글자 크기 자동 맞춤: 큰 글씨부터 줄여 가며 영역 안에 들어가는 첫 크기를 씁니다.
-    var build = isChant ? chantBlock : speechBlock;
-    var maxS = isChant ? 80 : 66;
-    var minS = isChant ? 40 : 38;
-    var s = maxS, block, total, overflow = false;
-    for (; s >= minS; s -= 2) {
-      block = build(ctx, card, bg, name, message, s);
-      total = measure(block);
-      if (total <= BOTTOM - top && !block.tooWide) break;
-    }
-    if (s < minS) { s = minS; block = build(ctx, card, bg, name, message, s); total = measure(block); overflow = true; }
 
     var y = top + Math.max(0, (BOTTOM - top - total) * 0.4);
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     block.forEach(function (l) {
       if (l.gap) { y += l.h; return; }
-      if (l.rule) {
-        ctx.fillStyle = l.color;
-        ctx.fillRect(MARGIN, y + 6, 44, 3);
+      if (l.msgBox) {
+        ctx.save();
+        roundRectPath(ctx, MARGIN, y, MAX_W, l.h, 20);
+        ctx.globalAlpha = 0.13; ctx.fillStyle = l.accent; ctx.fill();
+        ctx.globalAlpha = 0.55; ctx.lineWidth = 2; ctx.strokeStyle = l.accent; ctx.stroke();
+        ctx.restore();
+        ctx.font = font(700, l.label, SANS); ctx.fillStyle = l.accent;
+        ctx.fillText('보내는 말', MARGIN + l.pad, y + l.pad + l.label * 0.9);
+        ctx.font = l.font; ctx.fillStyle = l.ink;
+        l.lines.forEach(function (t, i) {
+          ctx.fillText(t, MARGIN + l.pad, y + l.pad + l.label * 1.5 + i * l.lh + l.lh * 0.74);
+        });
         y += l.h;
         return;
       }
@@ -204,8 +252,9 @@
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
 
-    return { fontSize: s, overflow: overflow };
+    var msgCut = block.some(function (l) { return l.msgBox && l.cut; });
+    return { fontSize: s, overflow: overflow, messageCut: msgCut };
   }
 
-  window.CardRender = { W: W, H: H, renderCard: renderCard };
+  window.CardRender = { W: W, H: H, renderCard: renderCard, MESSAGE_MAX: MESSAGE_MAX };
 })();

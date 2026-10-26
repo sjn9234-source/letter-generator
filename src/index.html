@@ -22,11 +22,7 @@
     <a class="notice-btn" id="openExternal" href="#">다른 브라우저로 열기</a>
   </div>
 
-  <ol class="steps" aria-label="사용 순서">
-    <li><b>1</b> 카드 고르기</li>
-    <li><b>2</b> 이름 적기</li>
-    <li><b>3</b> 사진 저장</li>
-  </ol>
+  <ol class="steps" aria-label="사용 순서"><li>카드 고르기</li><li>이름 적기</li><li>사진 저장</li></ol>
 
   <section aria-labelledby="pickTitle">
     <h2 id="pickTitle" class="step-title"><b>1</b> 마음에 드는 카드를 눌러 주세요</h2>
@@ -54,8 +50,9 @@
 
     <details class="more" id="decorate">
       <summary>더 꾸미기 (선택)</summary>
-      <label for="message" class="field-label">보내는 말</label>
-      <textarea id="message" rows="2" maxlength="60" placeholder="예: 다음 주에 같이 근행해요"></textarea>
+      <label for="message" class="field-label">보내는 말 <b class="limit">(<span id="limitMax">40</span>자까지)</b></label>
+      <textarea id="message" rows="2" maxlength="40" placeholder="예: 다음 주에 같이 근행해요"></textarea>
+      <p class="counter" id="counter" aria-live="polite"><span id="count">0</span> / <span id="countMax">40</span>자</p>
       <p class="field-label">배경 그림</p>
       <div class="bgs" id="bgs"></div>
     </details>

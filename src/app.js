@@ -232,6 +232,9 @@
   // ---- 시작 ----
   function init() {
     $('ver').textContent = 'v' + DATA.version;
+    $('message').maxLength = R.MESSAGE_MAX;      // 한도는 render.js 한 곳에서만 정합니다
+    $('limitMax').textContent = R.MESSAGE_MAX;
+    $('countMax').textContent = R.MESSAGE_MAX;
     if (inKakao) {
       $('kakaoNotice').hidden = false;
       $('openExternal').href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
@@ -250,7 +253,14 @@
       });
     });
     $('name').addEventListener('input', update);
-    $('message').addEventListener('input', update);
+    $('message').addEventListener('input', function () {
+      var max = R.MESSAGE_MAX, el = $('message');
+      var chars = Array.from(el.value);
+      if (chars.length > max) { el.value = chars.slice(0, max).join(''); chars = Array.from(el.value); }
+      $('count').textContent = chars.length;
+      $('counter').classList.toggle('full', chars.length >= max);
+      update();
+    });
     $('save').addEventListener('click', onSave);
     $('share').addEventListener('click', onShare);
     $('viewerClose').addEventListener('click', function () { $('viewer').hidden = true; });

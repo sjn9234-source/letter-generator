@@ -21,6 +21,15 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(pathToFileURL(join(root, 'dist/index.html')).href);
 await page.waitForFunction(() => document.querySelectorAll('.thumb').length > 0);
 
+// 가장 좁은 휴대폰(320px)에서도 사용 순서 안내가 한 줄인지
+for (const width of [320, 360]) {
+  await page.setViewportSize({ width, height: 800 });
+  const rows = await page.evaluate(() => new Set([...document.querySelectorAll('.steps li')].map((li) => Math.round(li.getBoundingClientRect().top))).size);
+  const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  if (rows !== 1 || over) { console.error(`✗ ${width}px 화면: 사용 순서가 ${rows}줄이거나 가로로 넘칩니다`); process.exitCode = 1; }
+}
+await page.setViewportSize({ width: 400, height: 860 });
+
 // 휴대폰 첫 화면 캡처
 mkdirSync(join(root, 'preview'), { recursive: true });
 await page.screenshot({ path: join(root, 'preview/screen-phone.png'), fullPage: true });
@@ -33,6 +42,8 @@ const result = await page.evaluate(async () => {
     for (const c of list) {
       cases.push({ type, id: c.id, name: '', message: '' });
       cases.push({ type, id: c.id, name: '김지훈', message: '다음 주에 같이 근행해요. 늘 응원할게요!' });
+      const worst = '뷁'.repeat(window.CardRender.MESSAGE_MAX); // 가장 넓은 글자로 한도까지 채운 경우
+      cases.push({ type, id: c.id, name: '김지훈김지훈김', message: worst, worst: true });
     }
   }
   const out = [];
@@ -40,14 +51,14 @@ const result = await page.evaluate(async () => {
     const cv = document.createElement('canvas');
     const r = window.LetterApp.renderTo(cv, k.type, k.id, k.name, k.message);
     const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
-    out.push({ ...k, ...r, png: !!blob, w: cv.width, h: cv.height, url: k.name ? cv.toDataURL('image/jpeg', 0.8) : null });
+    out.push({ ...k, ...r, png: !!blob, w: cv.width, h: cv.height, url: k.name && !k.worst ? cv.toDataURL('image/jpeg', 0.8) : null });
   }
   return out;
 });
 
-const problems = result.filter((r) => r.overflow || !r.png || r.w !== 1080 || r.h !== 1350);
+const problems = result.filter((r) => r.overflow || r.messageCut || !r.png || r.w !== 1080 || r.h !== 1350);
 for (const r of result) {
-  if (!r.name) continue;
+  if (!r.name || r.worst) continue;
   console.log(`${r.id}  글자크기 ${r.fontSize}px  ${r.overflow ? '⚠ 넘침' : 'OK'}  PNG ${r.png ? 'OK' : '실패'}`);
 }
 
