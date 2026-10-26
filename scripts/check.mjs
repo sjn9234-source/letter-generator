@@ -38,6 +38,29 @@ if (stepTop < 0 || stepTop > 60) { console.error(`✗ 카드를 눌렀을 때 2�
 await page.screenshot({ path: join(root, 'preview/screen-after-pick.png') });
 await page.evaluate(() => window.scrollTo(0, 0));
 
+// 공유가 되는 휴대폰 흉내: '카카오톡으로 보내기'가 주 버튼이고, 누르면 PNG 파일 1개로 공유 창을 여는지
+{
+  const sp = await browser.newPage({ viewport: { width: 360, height: 760 }, deviceScaleFactor: 2 });
+  await sp.addInitScript(() => {
+    window.__shared = [];
+    navigator.canShare = (d) => !!(d && d.files);
+    navigator.share = (d) => { window.__shared.push(d.files.map((f) => [f.name, f.type, f.size])); return Promise.resolve(); };
+  });
+  await sp.goto(pathToFileURL(join(root, 'dist/index.html')).href);
+  await sp.waitForFunction(() => document.querySelectorAll('.thumb').length > 0);
+  await sp.waitForTimeout(400);
+  const btns = await sp.evaluate(() => [...document.querySelectorAll('.actions button')].filter((b) => !b.hidden).map((b) => [b.textContent, b.className]));
+  await sp.click('#share');
+  await sp.waitForTimeout(400);
+  const shared = await sp.evaluate(() => window.__shared);
+  const okBtns = btns[0] && btns[0][0] === '카카오톡으로 보내기' && /btn-main/.test(btns[0][1]) && btns[1] && btns[1][0] === '사진 저장';
+  const okShare = shared.length === 1 && shared[0].length === 1 && shared[0][0][1] === 'image/png' && shared[0][0][2] > 0;
+  if (!okBtns || !okShare) { console.error('✗ 공유 모드 이상', JSON.stringify({ btns, shared })); process.exitCode = 1; }
+  else console.log('✓ 공유 모드: 주 버튼 \'카카오톡으로 보내기\', PNG 1개 공유 확인');
+  await sp.screenshot({ path: join(root, 'preview/screen-share-mode.png') });
+  await sp.close();
+}
+
 // 휴대폰 첫 화면 캡처
 mkdirSync(join(root, 'preview'), { recursive: true });
 await page.screenshot({ path: join(root, 'preview/screen-phone.png'), fullPage: true });

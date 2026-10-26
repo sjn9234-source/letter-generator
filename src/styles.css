@@ -12,7 +12,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);
-  font-family: var(--sans); font-size: 18px; line-height: 1.6;
+  font-family: var(--sans); font-size: 18px; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere;
 }
 .wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px 150px; }
 h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
@@ -43,7 +43,12 @@ h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
   background: var(--card); cursor: pointer; overflow: hidden; text-align: left; font: inherit; color: inherit;
 }
 .thumb canvas { display: block; width: 100%; height: auto; }
-.thumb span { display: block; padding: 8px 10px 10px; font-size: 16px; font-weight: 600; line-height: 1.35; }
+.thumb span { display: block; padding: 8px 10px 10px; line-height: 1.35; }
+.thumb span b { display: block; font-size: 17px; font-weight: 700; }
+.thumb span small {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 2px; font-size: 15px; font-weight: 500; color: var(--sub);
+}
 .thumb[aria-pressed="true"] { border-color: var(--accent); }
 .thumb[aria-pressed="true"]::after {
   content: "✓ 선택됨"; position: absolute; top: 8px; right: 8px; padding: 4px 10px; border-radius: 99px;
@@ -112,3 +117,5 @@ input:focus, textarea:focus, button:focus-visible, summary:focus-visible, a:focu
 .field-gap { margin-top: 22px; }
 #nameStep { scroll-margin-top: 12px; }
 #name + .hint { margin-bottom: 0; }
+.btn-small { flex: 0 0 auto; font-size: 17px; padding: 0 14px; }
+.btn-main { font-size: clamp(18px, 5vw, 20px); }

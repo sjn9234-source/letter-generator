@@ -18,6 +18,7 @@
   };
 
   var inKakao = /KAKAOTALK/i.test(navigator.userAgent);
+  var shareMode = false;
 
   function currentCard() {
     var list = cards[state.tab];
@@ -65,7 +66,12 @@
       c.setAttribute('aria-hidden', 'true');
       draw(c, state.tab, card, scale);
       var label = document.createElement('span');
-      label.textContent = card.title;
+      var t = document.createElement('b');
+      t.textContent = card.title;
+      var hint = document.createElement('small');
+      hint.textContent = state.tab === 'speech' ? card.recommendFor : card.reading;
+      label.appendChild(t);
+      label.appendChild(hint);
       btn.appendChild(c);
       btn.appendChild(label);
       btn.addEventListener('click', function () {
@@ -96,6 +102,7 @@
       renderAbout(card);
       renderBgChoices(card);
       clearResult();
+      if (shareMode) prebuild();
     });
   }
 
@@ -211,14 +218,30 @@
     }).then(function () { btn.disabled = false; });
   }
 
+  // 버튼을 누른 즉시 공유 창이 열리도록, 카드가 바뀔 때마다 사진 파일을 미리 만들어 둡니다.
+  var readyBlob = null, readyToken = 0;
+  function prebuild() {
+    var token = ++readyToken;
+    readyBlob = null;
+    makeBlob().then(function (b) { if (token === readyToken) readyBlob = b; }).catch(function () {});
+  }
+
+  function shareBlob(blob) {
+    var file = new File([blob], fileName(), { type: 'image/png' });
+    showStatus('공유 창에서 ‘카카오톡’을 골라 받는 분을 선택해 주세요.', false);
+    return navigator.share({ files: [file] }).then(function () {
+      showStatus('보내셨다면 완료입니다. 다른 분께 보낼 카드도 이어서 만들 수 있어요.', false);
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') { $('status').textContent = ''; return; }
+      state.lastBlob = blob;
+      state.lastUrl = state.lastUrl || URL.createObjectURL(blob);
+      showStatus('공유 창을 열지 못했어요. 사진을 크게 보고 길게 눌러 저장해 주세요.', true);
+    });
+  }
+
   function onShare() {
-    prepare().then(function (blob) {
-      var file = new File([blob], fileName(), { type: 'image/png' });
-      return navigator.share({ files: [file] }).catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        showStatus('공유 창을 열지 못했어요. 아래에서 사진을 크게 보고 저장해 주세요.', true);
-      });
-    }).catch(function () {
+    if (readyBlob) { shareBlob(readyBlob); return; }
+    prepare().then(shareBlob).catch(function () {
       showStatus('사진을 만들지 못했어요. 화면을 새로고침한 뒤 다시 눌러 주세요.', false);
     });
   }
@@ -240,7 +263,17 @@
       $('kakaoNotice').hidden = false;
       $('openExternal').href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
     }
-    if (canShareFiles()) $('share').hidden = false;
+    if (canShareFiles()) {
+      // 공유가 되는 휴대폰: '카카오톡으로 보내기'를 크게, '사진 저장'은 작게
+      shareMode = true;
+      var share = $('share'), save = $('save');
+      share.hidden = false;
+      share.className = 'btn-main';
+      share.textContent = '카카오톡으로 보내기';
+      save.className = 'btn-sub btn-small';
+      save.textContent = '사진 저장';
+      share.parentNode.insertBefore(share, save);
+    }
 
     document.querySelectorAll('[role="tab"]').forEach(function (t) {
       t.addEventListener('click', function () {
