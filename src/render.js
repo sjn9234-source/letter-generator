@@ -7,6 +7,7 @@
   var TOP = 572, BOTTOM = 1252;  // 글자 영역
   // 근행 카드는 설명이 길어 일러스트 위쪽을 잘라 씁니다. 그림의 주요 요소는 위에서 CROP px 아래에 두세요.
   var CROP = 200;
+  var MAX_CUT = 300;  // 그림을 가장 많이 자를 때 (그림 높이 340px, 카드의 약 25%)
   var SERIF = '"Noto Serif KR","Noto Serif CJK KR","Nanum Myeongjo","AppleMyungjo",serif';
   var SANS = '"Pretendard","Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
   var SITE_NAME = '함께 부르는 행복';
@@ -72,7 +73,7 @@
 
   function messageBlock(ctx, message, bg) {
     if (!message) return [];
-    var size = 36, lh = size * 1.5, label = 26;
+    var size = 36, lh = size * 1.5, label = 28;
     var f = font(500, size, SANS);
     ctx.font = f;
     var lines = charWrap(ctx, message, MAX_W - BOX_PAD * 2);
@@ -97,27 +98,27 @@
 
   function speechBlock(ctx, card, bg, name, message, s) {
     var out = salutation(ctx, name, s, bg);
-    var qf = font(500, s, SERIF);
+    var qf = font(600, s, SERIF);
     var src = card.lines && card.lines.length ? card.lines : [card.quote];
-    src.forEach(function (line) { out = out.concat(textLines(ctx, line, qf, bg.ink, s * 1.55, MAX_W)); });
+    src.forEach(function (line) { out = out.concat(textLines(ctx, line, qf, bg.ink, s * 1.6, MAX_W)); });
     out.push(gap(s * 0.7));
-    var small = Math.max(28, s * 0.42);
-    out = out.concat(textLines(ctx, card.author, font(600, Math.max(30, s * 0.46), SANS), bg.sub, small * 1.6, MAX_W));
-    out = out.concat(textLines(ctx, card.sourceLabel + '  ' + formatDate(card.sourceDate), font(400, small, SANS), bg.sub, small * 1.45, MAX_W));
+    var small = Math.max(31, s * 0.44);
+    out = out.concat(textLines(ctx, card.author, font(700, Math.max(33, s * 0.5), SANS), bg.sub, small * 1.6, MAX_W));
+    out = out.concat(textLines(ctx, card.sourceLabel + '  ' + formatDate(card.sourceDate), font(500, small, SANS), bg.sub, small * 1.45, MAX_W));
     return out.concat(messageBlock(ctx, message, bg));
   }
 
   // 근행 카드: 독송음(크게) 아래 한자(작게) → 경문의 뜻 → 쉽게 말하면 → 출처
   function chantBlock(ctx, card, bg, name, message, s) {
     var out = salutation(ctx, name, Math.min(s, 64), bg);
-    out = out.concat(textLines(ctx, '법화경 ' + card.chapter, font(600, 28, SANS), bg.accent, 28 * 1.7, MAX_W));
+    out = out.concat(textLines(ctx, '법화경 ' + card.chapter, font(700, 30, SANS), bg.accent, 30 * 1.7, MAX_W));
 
     var readings = card.reading.split(' · ');
     var hanja = card.hanja.split('·');
     var cols = readings.length === 1 ? 1 : 2;
     var colGap = 40;
     var colW = (MAX_W - colGap * (cols - 1)) / cols;
-    var hs = Math.max(28, s * 0.42);
+    var hs = Math.max(30, s * 0.42);
     var rf = font(700, s, SERIF), hf = font(500, hs, SERIF);
     ctx.font = rf;
     var tooWide = readings.some(function (t) { return ctx.measureText(t).width > colW; });
@@ -131,15 +132,17 @@
     });
     out.push(gap(s * 0.45));
 
-    var b = Math.max(30, Math.min(38, s * 0.5));
-    [['경문의 뜻', card.meaning], ['쉽게 말하면', card.explanation]].forEach(function (sec) {
-      out = out.concat(textLines(ctx, sec[0], font(700, 26, SANS), bg.accent, 26 * 1.6, MAX_W));
-      out = out.concat(textLines(ctx, sec[1], font(400, b, SANS), bg.ink, b * 1.55, MAX_W));
-      out.push(gap(18));
+    var b = Math.max(32, Math.min(40, s * 0.5));
+    // [제목, 본문, 본문 굵기, 본문 크기 가산] — 청년이 먼저 읽을 '쉽게 말하면'을 더 크고 진하게
+    [['경문의 뜻', card.meaning, 400, 0], ['쉽게 말하면', card.explanation, 600, 2]].forEach(function (sec, i) {
+      if (i > 0) out.push(gap(14));
+      out = out.concat(textLines(ctx, sec[0], font(700, 30, SANS), bg.accent, 30 * 1.6, MAX_W));
+      out = out.concat(textLines(ctx, sec[1], font(sec[2], b + sec[3], SANS), bg.ink, (b + sec[3]) * 1.55, MAX_W));
     });
+    out.push(gap(20));
     // 카드에는 출처의 첫 항목만, 전체 출처는 앱의 '카드 설명 보기'에 표시
     var shortSource = card.sourceLabel.split(/ \/ | · /)[0];
-    out = out.concat(textLines(ctx, '출처 · ' + shortSource, font(400, 26, SANS), bg.sub, 26 * 1.5, MAX_W));
+    out = out.concat(textLines(ctx, '출처 · ' + shortSource, font(500, 30, SANS), bg.sub, 30 * 1.5, MAX_W));
     out = out.concat(messageBlock(ctx, message, bg));
     out.tooWide = tooWide;
     return out;
@@ -183,22 +186,26 @@
     var build = isChant ? chantBlock : speechBlock;
     var maxS = isChant ? 80 : 66;
     var minS = isChant ? 40 : 38;
+    // 이 크기 밑으로는 글자를 줄이기 전에 그림을 먼저 줄입니다 (카카오톡 화면 기준 약 18px).
+    var readMin = isChant ? 56 : 54;
 
-    // 글자 크기 자동 맞춤: 큰 글씨부터 줄여 가며 영역 안에 들어가는 첫 크기를 씁니다.
-    // 스피치 카드는 글이 길 때만 그림 위쪽을 100px, 200px 순서로 더 잘라 공간을 만듭니다.
-    // (그림의 주요 요소는 위에서 200px 아래에 있으므로 잘려도 보입니다.)
-    var cuts = isChant ? [CROP, CROP + 50] : [0, 100, CROP];
+    // 1차: 그림을 단계적으로 줄여 가며(스피치 47%→40%→33%→25%, 근행 33%→29%→25%)
+    //      readMin 이상 크기로 들어가는 첫 배치를 고릅니다. 짧은 글은 그림이 크게 남습니다.
+    // 2차: 그래도 안 되면 그림을 가장 작게 두고 minS 까지 글자를 줄입니다.
+    // (그림의 주요 요소는 위에서 MAX_CUT px 아래에 두어야 잘리지 않습니다.)
+    var cuts = isChant ? [CROP, CROP + 50, MAX_CUT] : [0, 100, CROP, MAX_CUT];
     var cut, top, s, block, total, overflow = true;
-    for (var ci = 0; ci < cuts.length && overflow; ci++) {
-      cut = cuts[ci];
-      top = TOP - cut;
-      for (s = maxS; s >= minS; s -= 2) {
-        block = build(ctx, card, bg, name, message, s);
-        total = measure(block);
-        if (total <= BOTTOM - top && !block.tooWide) { overflow = false; break; }
+    function tryFit(c, from, to) {
+      for (var z = from; z >= to; z -= 2) {
+        var bl = build(ctx, card, bg, name, message, z);
+        var tt = measure(bl);
+        if (tt <= BOTTOM - (TOP - c) && !bl.tooWide) { cut = c; top = TOP - c; s = z; block = bl; total = tt; return true; }
       }
+      return false;
     }
-    if (overflow) { s = minS; block = build(ctx, card, bg, name, message, s); total = measure(block); }
+    for (var ci = 0; ci < cuts.length && overflow; ci++) overflow = !tryFit(cuts[ci], maxS, readMin);
+    if (overflow) overflow = !tryFit(MAX_CUT, readMin - 2, minS);
+    if (overflow) { cut = MAX_CUT; top = TOP - cut; s = minS; block = build(ctx, card, bg, name, message, s); total = measure(block); }
 
     if (opts.image) {
       var sw = opts.image.naturalWidth || opts.image.width || W;
@@ -214,8 +221,7 @@
       if (l.msgBox) {
         ctx.save();
         roundRectPath(ctx, MARGIN, y, MAX_W, l.h, 20);
-        ctx.globalAlpha = 0.13; ctx.fillStyle = l.accent; ctx.fill();
-        ctx.globalAlpha = 0.55; ctx.lineWidth = 2; ctx.strokeStyle = l.accent; ctx.stroke();
+        ctx.globalAlpha = 0.17; ctx.fillStyle = l.accent; ctx.fill();
         ctx.restore();
         ctx.font = font(700, l.label, SANS); ctx.fillStyle = l.accent;
         ctx.fillText('보내는 말', MARGIN + l.pad, y + l.pad + l.label * 0.9);
@@ -254,7 +260,7 @@
     ctx.restore();
 
     var msgCut = block.some(function (l) { return l.msgBox && l.cut; });
-    return { fontSize: s, overflow: overflow, messageCut: msgCut };
+    return { fontSize: s, overflow: overflow, messageCut: msgCut, illustrationPct: Math.round((ILL_H - cut) / H * 100) };
   }
 
   window.CardRender = { W: W, H: H, renderCard: renderCard, MESSAGE_MAX: MESSAGE_MAX };
