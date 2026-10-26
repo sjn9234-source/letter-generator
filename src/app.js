@@ -74,7 +74,8 @@
           t.setAttribute('aria-pressed', String(t.dataset.id === card.id));
         });
         update();
-        $('preview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 카드를 고르면 '2 이름과 편지 적기' 제목이 화면 맨 위에 오도록
+        $('nameStep').scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
       grid.appendChild(btn);
     });
