@@ -1,6 +1,6 @@
 {
   "name": "letter-generator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "함께 부르는 행복 — 응원·근행창제 카드 만들기",
   "type": "module",
